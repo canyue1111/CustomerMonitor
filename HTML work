@@ -1,0 +1,127 @@
+from ._anvil_designer import Form1Template
+from anvil import *
+import plotly.graph_objects as go
+import anvil.server
+
+#0 means are there, 1 means leaving
+
+class Form1(Form1Template):
+  def __init__(self, **properties):
+    # Set Form properties and Data Bindings.
+    self.init_components(**properties)
+    self.temp_data = []
+    self.build_first_graph()
+    # Any code you write here will run when the form opens.
+    
+
+  def drop_down_1_change(self, **event_args):
+    """This method is called when an item is selected"""
+    pass
+
+  def button_1_click(self, **event_args):
+    """This method is called when the button is clicked"""
+    if self.button_1.text == "Leave":
+      self.updated_info.text = "Status: Leaving"
+      self.button_1.text = "BACK"
+    else:
+      self.updated_info.text = "Status: Working"
+      self.button_1.text = "Leave"
+    
+    
+    
+
+  def button_1_show(self, **event_args):
+    """This method is called when the Button is shown on the screen"""
+        # Call the google colab function and pass it the iris measurements
+      
+      
+  def Title_show(self, **event_args):
+    """This method is called when the Label is shown on the screen"""
+    pass
+
+  
+  def style_plot(self, plot):
+    # expand the graphs
+    plot.layout = go.Layout(
+        margin=dict(
+            l=50, #left margin
+            r=50, #right margin
+            b=50, #bottom margin
+            t=50, #top margin
+        ),
+        font=dict(family='Arial', size=10),
+        xaxis=dict(
+          zeroline=False,
+          tickfont=dict(
+              family='Arial',
+              size=11,
+              color='#808080'
+          ),
+        ),
+        yaxis=dict(
+            zeroline=False,
+            tickfont=dict(
+                family='Arial',
+                size=11,
+                color='#808080'
+            ),
+        ))
+    
+  def build_first_graph(self):
+    """Emotion vs Time"""
+    _data = anvil.server.call('trans_int_da')
+    # Add time and temperature data from api to our temp_data variable.
+    self.style_plot(self.plot_1)
+    self.plot_1.layout.title = "REAL-TIME Emotion Detection"
+    self.plot_1.layout.yaxis.title = "Emotion"
+    self.plot_1.data = go.Scatter(y=[x['Emotion'] for x in _data], 
+                                  x=[x['Time'] for x in _data], 
+                                  line=dict(color='#2196f3'))
+    
+  def build_second_graph(self):
+    self.updated_info.text = anvil.server.call("Customer_Performance", self.customer_id_box.text)
+  
+  #whenever few seconds update website!!!!
+  def timer_1_tick(self, **event_args):
+    """This method is called Every [interval] seconds. Does not trigger if [interval] is 0."""
+    with anvil.server.no_loading_indicator:
+      if self.drop_down_1.selected_value == 'Emotion VS. Time':
+        self.plot_1.visible = True
+        self.button_1.visible = True
+        self.customer_id_box.visible= False
+        self.build_first_graph()
+      if self.drop_down_1.selected_value == 'Employee Performance Check':
+        self.plot_1.visible = False
+        self.button_1.visible = True
+        self.customer_id_box.visible= True
+        self.build_second_graph()
+      if anvil.server.call('lastThreeAngry'):
+        alert("Customers' Emotion is BAD")
+        anvil.server.call('send_mail')
+        #send mail function is not availble because my free memebership!
+        #sometimes works
+      #If none employee here and customer exist
+      if anvil.server.call('Customer_coming') & (self.button_1.text == "BACK"):
+        alert("Need Customer Assistance")
+        self.button_1.text = "Leave"
+      
+      if anvil.server.call('lastThreeSurprise') & (self.drop_down_1.selected_value == 'Emotion VS. Time'):
+        self.updated_info.text = 'Explain more clearly to Customers'
+
+      elif anvil.server.call('lastThreeFear') & (self.drop_down_1.selected_value == 'Emotion VS. Time'):
+        self.updated_info.text = 'Showing you can be trusted'
+      elif anvil.server.call('lastThreeHappy') & (self.drop_down_1.selected_value == 'Emotion VS. Time'):
+        self.updated_info.text = 'You did a good job'
+      elif self.drop_down_1.selected_value == 'Emotion VS. Time':
+        self.updated_info.text = 'Keep doing it'
+        
+  def text_box_1_pressed_enter(self, **event_args):
+    """This method is called when the user presses Enter in this text box"""
+    pass
+
+  def button_2_click(self, **event_args):
+    """This method is called when the button is clicked"""
+    csv_1_url_media = anvil.server.call('make_data')
+    download(csv_1_url_media)
+
+
